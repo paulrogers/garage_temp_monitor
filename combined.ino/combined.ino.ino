@@ -175,7 +175,7 @@ void loop() {
   bool heaterUpButtonPressed = digitalRead(heatUpPin);
   if ( !heaterUpButtonPressed) {
     if ( heaterOnOffButtonState_LAST ) {
-      if ( setTemperature < maxAllowedTemperature){
+      if ( setTemperature < maxAllowedTemperature) {
         setTemperature = setTemperature + tempIncrement;
         writeSetTempToLCD( setTemperature );
         lcd.print(heaterUpButtonPressed);
@@ -193,7 +193,7 @@ void loop() {
         setTemperature = setTemperature - tempIncrement;
         writeSetTempToLCD( setTemperature );
         Serial.println("down button pressed");
-      }  
+      }
     }
   }
   heaterDownButtonState_LAST = heaterUpButtonPressed;
@@ -201,37 +201,43 @@ void loop() {
 
   if ( heater_enabled  ) {
 
-    if ( (setTemperature > ( ave.mean() ))  && !heating  ) {
-      Serial.println("set temp is more than actual, enabling heater, if it hasnt ben used recently");
-      // dont start heater within 5 minuts of last heat cycle
-      unsigned long currentHeaterMillis = millis();
-      Serial.println( currentHeaterMillis );
-      Serial.println( five_minutes );
-      Serial.println( lastHeaterStoppedAt );
+    if ( t1 >= maxAllowedTemperature ) {
+      // switch off the heater regardless
+      setHeaterState( false );
+    } else {
 
-      // if we cycle the heater, with in 5 minutes, we get a -ve, which is > five_minutes
-      // so we need to check for > 0 too, but then we get cast issues....
-      // As long as we dont cycle in the first 5 minutes, I think its all ok....
-      Serial.println(currentHeaterMillis - five_minutes );
-      if ( (currentHeaterMillis - five_minutes)  > 0 ) {
-        if ( ( currentHeaterMillis - five_minutes ) > lastHeaterStoppedAt  ) {
-          setHeaterState( true );
-        }  else {
-          Serial.println("Want to heat, but need to wait..");
-          writeHeaterStateToLCD("wait");
+      if ( (setTemperature > ( ave.mean() ))  && !heating  ) {
+        Serial.println("set temp is more than actual, enabling heater, if it hasnt ben used recently");
+        // dont start heater within 5 minuts of last heat cycle
+        unsigned long currentHeaterMillis = millis();
+        Serial.println( currentHeaterMillis );
+        Serial.println( five_minutes );
+        Serial.println( lastHeaterStoppedAt );
+
+        // if we cycle the heater, with in 5 minutes, we get a -ve, which is > five_minutes
+        // so we need to check for > 0 too, but then we get cast issues....
+        // As long as we dont cycle in the first 5 minutes, I think its all ok....
+        Serial.println(currentHeaterMillis - five_minutes );
+        if ( (currentHeaterMillis - five_minutes)  > 0 ) {
+          if ( ( currentHeaterMillis - five_minutes ) > lastHeaterStoppedAt  ) {
+            setHeaterState( true );
+          }  else {
+            Serial.println("Want to heat, but need to wait..");
+            writeHeaterStateToLCD("wait");
+          }
+        } else {
+          Serial.println("Cant Heat cycle in first 5 minutes. Need to wait..");
+          writeHeaterStateToLCD("init");
         }
-      } else {
-        Serial.println("Cant Heat cycle in first 5 minutes. Need to wait..");
-        writeHeaterStateToLCD("init");
       }
     }
   } else {
-      // likley the on/off button has been set to off
-      if ( heating) {
-        setHeaterState( false );
-        lastHeaterStoppedAt = millis();
-        Serial.println(" heater set to off ");
-      }    
+    // likley the on/off button has been set to off
+    if ( heating) {
+      setHeaterState( false );
+      lastHeaterStoppedAt = millis();
+      Serial.println(" heater set to off ");
+    }
   }
   if ( (setTemperature <= ( ave.mean()   ) ) && heating) {
     Serial.println("Desired Temperature reached. Heater being switched off!");
