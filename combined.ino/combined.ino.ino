@@ -1,3 +1,5 @@
+#include <LiquidCrystal.h>
+
 
 // Example testing sketch for various DHT humidity/temperature sensors
 // Written by ladyada, public domain
@@ -68,6 +70,9 @@ float setTemperature;
 // the increment in temperature between button presses
 float tempIncrement = 0.5;
 
+// the max temp we allow the up/buttons to goto
+float maxAllowedTemperature = 25.0;
+float minAllowedTemperature = 0.0;
 
 // rolling average to help stop spikes in current temp causing heater to cycle quickl
 Average<float> ave(20);
@@ -170,10 +175,12 @@ void loop() {
   bool heaterUpButtonPressed = digitalRead(heatUpPin);
   if ( !heaterUpButtonPressed) {
     if ( heaterOnOffButtonState_LAST ) {
-      setTemperature = setTemperature + tempIncrement;
-      writeSetTempToLCD( setTemperature );
-      lcd.print(heaterUpButtonPressed);
-      Serial.println("up button pressed");
+      if ( setTemperature < maxAllowedTemperature){
+        setTemperature = setTemperature + tempIncrement;
+        writeSetTempToLCD( setTemperature );
+        lcd.print(heaterUpButtonPressed);
+        Serial.println("up button pressed");
+      }
     }
   }
   heaterOnOffButtonState_LAST = heaterUpButtonPressed;
@@ -182,9 +189,11 @@ void loop() {
   bool heaterDownButtonPressed = digitalRead(heatDownPin);
   if ( !heaterDownButtonPressed) {
     if ( heaterDownButtonState_LAST ) {
-      setTemperature = setTemperature - tempIncrement;
-      writeSetTempToLCD( setTemperature );
-      Serial.println("down button pressed");
+      if ( setTemperature > minAllowedTemperature) {
+        setTemperature = setTemperature - tempIncrement;
+        writeSetTempToLCD( setTemperature );
+        Serial.println("down button pressed");
+      }  
     }
   }
   heaterDownButtonState_LAST = heaterUpButtonPressed;
